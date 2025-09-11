@@ -1,0 +1,51 @@
+package com.example.demo;
+
+import com.example.demo.clientgithub.GitHubClient;
+import com.example.demo.clientgithub.model.RepositoryGithubDTO;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+
+@AutoConfigureWireMock(port = 8585)
+@SpringBootTest
+public class GithubClientTest {
+    @Autowired
+    GitHubClient gitHubClient;
+    @Autowired
+    WireMockServer wireMockServer;
+    @Autowired
+    ObjectMapper objectMapper;
+
+    @Test
+    void shouldGetRepository() throws JsonProcessingException{
+        String owner = "biku89";
+        String repo = "medical-clinic";
+        RepositoryGithubDTO repositoryGithubDTO = RepositoryGithubDTO
+                .builder()
+                .fullName("biku89/medical-clinic")
+                .stars(1)
+                .build();
+
+        wireMockServer.stubFor(get(urlEqualTo(String.format("/repos/%s/%s",owner,repo)))
+                .willReturn(aResponse()
+                        .withBody(objectMapper.writeValueAsString(repositoryGithubDTO))
+                        .withHeader("content-type","application/json")));
+
+        RepositoryGithubDTO result = gitHubClient.getRepo(owner,repo);
+
+        assertAll(
+                () -> assertEquals("biku89/medical-clinic", result.fullName())
+        );
+
+    }
+}
