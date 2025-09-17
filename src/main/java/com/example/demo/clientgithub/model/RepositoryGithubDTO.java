@@ -7,6 +7,7 @@ import lombok.Builder;
 public record RepositoryGithubDTO(
         @JsonProperty("full_name")
         String fullName,
+        @JsonProperty("description")
         String description,
         @JsonProperty("clone_url")
         String cloneUrl,

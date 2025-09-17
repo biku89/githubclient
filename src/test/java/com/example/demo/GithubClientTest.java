@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -27,7 +28,7 @@ public class GithubClientTest {
     ObjectMapper objectMapper;
 
     @Test
-    void shouldGetRepository() throws JsonProcessingException{
+    void shouldGetRepository() throws JsonProcessingException {
         String owner = "biku89";
         String repo = "medical-clinic";
         RepositoryGithubDTO repositoryGithubDTO = RepositoryGithubDTO
@@ -36,12 +37,18 @@ public class GithubClientTest {
                 .stars(1)
                 .build();
 
-        wireMockServer.stubFor(get(urlEqualTo(String.format("/repos/%s/%s",owner,repo)))
+        //wireMock.stubFor- przy pomocy stubfor mówimy dla jakiego requestu wysłanego do zmokowanego serwera
+        // co ma zostać zwrócne. W tym przypadku jeśli zostanie wysłany request get pod adres /repos/biku89/medical-clinic
+        //willReturn- czyli ma zostać zwrócona odpowiedź http(aResponse())który będzie zawierał w body
+        //dane repositygithubDTO zamienione na json'a oraz odpowiedź ma zawierać header content-type o wartości
+        // aplication json czyli header który odpowiada za to zeby poinformować w jakim formacie są dane w body.
+
+        wireMockServer.stubFor(get(urlEqualTo(String.format("/repos/%s/%s", owner, repo)))
                 .willReturn(aResponse()
                         .withBody(objectMapper.writeValueAsString(repositoryGithubDTO))
-                        .withHeader("content-type","application/json")));
+                        .withHeader("content-type", "application/json")));
 
-        RepositoryGithubDTO result = gitHubClient.getRepo(owner,repo);
+        RepositoryGithubDTO result = gitHubClient.getRepo(owner, repo);
 
         assertAll(
                 () -> assertEquals("biku89/medical-clinic", result.fullName())
