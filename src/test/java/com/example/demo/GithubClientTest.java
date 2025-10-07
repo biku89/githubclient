@@ -5,14 +5,13 @@ import com.example.demo.clientgithub.model.RepositoryGithubDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -52,6 +51,44 @@ public class GithubClientTest {
 
         assertAll(
                 () -> assertEquals("biku89/medical-clinic", result.fullName())
+        );
+    }
+
+    @Test
+    void shouldRetry() {
+        String owner = "biku89";
+        String repo = "medical-clinic";
+
+        wireMockServer.stubFor(get(urlEqualTo(String.format("/repos/%s/%s", owner, repo)))
+                .willReturn(aResponse()
+                        .withStatus(503)
+                        .withHeader("Retry-After", "10")));
+
+        try {
+            gitHubClient.getRepo(owner, repo);
+        } catch (Exception exception) {
+
+
+            verify(3, getRequestedFor(urlEqualTo("/repos/" + owner + "/" + repo)));
+        }
+    }
+
+    @Test
+    void shouldReturnFallback(){
+        String owner = "biku89";
+        String repo = "medical-clinic";
+
+        wireMockServer.stubFor(get(urlEqualTo(String.format("/repos/%s/%s", owner, repo)))
+                .willReturn(aResponse()
+                        .withStatus(500)));
+
+        RepositoryGithubDTO result = gitHubClient.getRepo(owner,repo);
+
+        assertAll(
+                () -> assertEquals("biku89/medical-clinic", result.fullName()),
+                () -> assertEquals("My description", result.description()),
+                () -> assertEquals("cloneUrl", result.cloneUrl()),
+                () -> assertEquals(2, result.stars())
         );
 
     }

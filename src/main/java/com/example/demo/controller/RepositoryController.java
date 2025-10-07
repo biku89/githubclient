@@ -6,11 +6,13 @@ import com.example.demo.model.Repository;
 import com.example.demo.model.RepositoryDTO;
 import com.example.demo.service.RepositoryService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/repositories")
+@Slf4j
 public class RepositoryController {
     private final RepositoryService repositoryService;
 
@@ -19,6 +21,7 @@ public class RepositoryController {
             @PathVariable String owner,
             @PathVariable String repo
     ){
+        log.info("get request /repositories/{}/{}", owner, repo);
         return repositoryService.getRepository(owner,repo);
     }
 
@@ -27,6 +30,7 @@ public class RepositoryController {
             @PathVariable String owner,
             @PathVariable String repo
     ){
+        log.info("post request /repositories/{}/{}", owner, repo);
       return repositoryService.addRepository(owner,repo);
     }
 

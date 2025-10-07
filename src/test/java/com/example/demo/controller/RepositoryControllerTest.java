@@ -11,12 +11,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.util.Optional;
+
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.extension.responsetemplating.helpers.WireMockHelpers.jsonPath;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -26,14 +30,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 public class RepositoryControllerTest {
     @Autowired
-    GitHubClient gitHubClient;
-    @Autowired
     WireMockServer wireMockServer;
     @Autowired
     ObjectMapper objectMapper;
     @Autowired
     MockMvc mockMvc;
-    @Autowired
+    @MockBean
     RepositoryJpa repositoryJpa;
 
     @Test
@@ -52,10 +54,8 @@ public class RepositoryControllerTest {
                         .withBody(objectMapper.writeValueAsString(repositoryGithubDTO))
                         .withHeader("content-type", "application/json")));
 
-
         mockMvc.perform(MockMvcRequestBuilders.get(String.format("/repositories/%s/%s", owner, repo)))
                 .andDo(print());
-
     }
 
     @Test
@@ -63,18 +63,21 @@ public class RepositoryControllerTest {
         String owner = "biku89";
         String repo = "medical-clinic";
 
-        RepositoryDTO repositoryDTO = new RepositoryDTO(owner + "/" + repo,"description","clone",2, "created");
+        RepositoryGithubDTO repositoryGithubDTO = new RepositoryGithubDTO(owner + "/" + repo,"description","clone",2, "created");
 
         wireMockServer.stubFor(get(urlEqualTo(String.format("/repos/%s/%s", owner, repo)))
                 .willReturn(aResponse()
-                        .withBody(objectMapper.writeValueAsString(repositoryDTO))
+                        .withBody(objectMapper.writeValueAsString(repositoryGithubDTO))
                         .withHeader("content-type", "application/json")));
 
-        mockMvc.perform(MockMvcRequestBuilders.get(String.format("/repositories/%s/%s", owner, repo)))
+        mockMvc.perform(MockMvcRequestBuilders.post(String.format("/repositories/%s/%s", owner, repo)))
                 .andDo(print())
                 .andExpectAll(
                         status().isOk(),
-                        jsonPath("$.fullName").value("biku89/medical-clinic")
+                        jsonPath("$.fullName").value("biku89/medical-clinic"),
+                        jsonPath("$.description").value(repositoryGithubDTO.description()),
+                        jsonPath("$.cloneUrl").value(repositoryGithubDTO.cloneUrl()),
+                        jsonPath("$.stars").value(repositoryGithubDTO.stars())
                 );
     }
 
@@ -87,7 +90,9 @@ public class RepositoryControllerTest {
         repository.setFullName(owner + "/" + repo);
         repository.setDescription("My description");
         repository.setStars(0);
-        repositoryJpa.save(repository);
+
+        when(repositoryJpa.findByFullName(owner + "/" + repo)).thenReturn(Optional.of(repository));
+
 
         mockMvc.perform(MockMvcRequestBuilders.get(String.format("/local/repositories/%s/%s", owner, repo)))
                 .andDo(print())

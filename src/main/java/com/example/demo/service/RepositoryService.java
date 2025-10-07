@@ -31,6 +31,7 @@ public class RepositoryService {
         repository.setStars(repositoryGithubDTO.stars());
         repository.setCloneUrl(repositoryGithubDTO.cloneUrl());
         repository.setFullName(repositoryGithubDTO.fullName());//to do wyniesienia do innej metody
+        repository.setCreatedAt(repositoryGithubDTO.createdAt());
         repositoryJpa.save(repository);
         return repositoryMapper.toDTO(repositoryGithubDTO);
     }
@@ -41,14 +42,17 @@ public class RepositoryService {
                 .orElseThrow(() -> new RuntimeException("Repository not found")); // porób własne wyjątki
     }
 
-    public RepositoryDTO updateRepository(String owner, String repo, RepositoryUpdateCommand repositoryUpdate){
+    public RepositoryDTO updateRepository(String owner, String repo){
+        RepositoryGithubDTO repositoryGithubDTO = gitHubClient.getRepo(owner,repo);
+
         Repository repository = repositoryJpa.findByFullName(owner + "/" + repo)
                 .orElseThrow(() -> new RuntimeException("Repository not found"));
 
-        repository.setDescription(repositoryUpdate.getDescription());
-        repository.setStars(repositoryUpdate.getStars());
-        repository.setCloneUrl(repositoryUpdate.getCloneUrl());
-        repository.setCreatedAt(repositoryUpdate.getCreatedAt()); //do wyniesienia
+        repository.setFullName(repositoryGithubDTO.fullName());
+        repository.setDescription(repositoryGithubDTO.description());
+        repository.setStars(repositoryGithubDTO.stars());
+        repository.setCloneUrl(repositoryGithubDTO.cloneUrl());
+        repository.setCreatedAt(repositoryGithubDTO.createdAt()); //do wyniesienia DOPISZ KONTROLERY I PORÓB TESTY
 
         Repository repositoryUpdated = repositoryJpa.save(repository);
         return repositoryMapper.repoToDTO(repositoryUpdated);

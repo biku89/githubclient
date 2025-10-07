@@ -11,9 +11,8 @@ public record RepositoryGithubDTO(
         String description,
         @JsonProperty("clone_url")
         String cloneUrl,
+        @JsonProperty("stars")
         Integer stars,
         @JsonProperty("stargazers_url")
         String createdAt) {
-
-
 }
