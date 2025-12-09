@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  app:
+    image: docker-spring-boot-postgres:latest
+    build:
+      context: .
+    container_name: app
+    depends_on:
+      - db
+    environment:
+      - POSTGRES_USER=ja
+      - POSTGRES_PASSWORD=password
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/dbname
+      - SPRING_DATASOURCE_USERNAME=ja
+      - SPRING_DATASOURCE_PASSWORD=password
+    ports:
+      - "8080:8080"
+
+  db:
+    image: postgres
+    container_name: db
+    environment:
+      - POSTGRES_USER=ja
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=dbname
+    ports:
+      - "5432:5432"
+
+  pgAdmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: password
+
+  my-keycloak:
+    image: quay.io/keycloak/keycloak:24.0.5
+    container_name: my-keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+      KC_LOG_LEVEL: info
+    command: [ "start-dev", "--http-port=8080" ]
+    ports:
+      - "7080:8080"
+
